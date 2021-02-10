@@ -1,20 +1,21 @@
 const path = require('path')
 const fs = require('fs')
+const logger = require('./logger')
 
-const abort = (message, logger = console, code = 1) => {
+const abort = (message, code = 1) => {
   logger.error(message)
   process.exit(code)
 }
 
-const enforce = (condition, message, logger, code) => {
-  if (!condition) abort(message, logger, code)
+const enforce = (condition, message, code) => {
+  if (!condition) abort(message, code)
 }
 
 const enforceOrThrow = (condition, message) => {
   if (!condition) throw new Error(message)
 }
 
-const getArtifact = (contractName, contractsBuildDir, logger) => {
+const getArtifact = (contractName, contractsBuildDir) => {
   const artifactPath = path.resolve(contractsBuildDir, `${contractName}.json`)
 
   logger.debug(`Reading artifact file at ${artifactPath}`)

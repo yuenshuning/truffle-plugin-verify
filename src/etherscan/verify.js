@@ -1,13 +1,11 @@
 const axios = require('axios')
-const cliLogger = require('cli-logger')
 const delay = require('delay')
 const querystring = require('querystring')
 const { API_URLS, EXPLORER_URLS, RequestStatus, VerificationStatus } = require('./constants')
 const { version } = require('../../package.json')
 const { getArtifact, extractCompilerVersion, enforce, enforceOrThrow } = require('../common/util')
 const { getInputJSON } = require('../common/input-json')
-
-const logger = cliLogger({ level: 'info' })
+const logger = require('../common/logger')
 
 module.exports = async (config) => {
   const options = parseConfig(config)
@@ -27,7 +25,7 @@ module.exports = async (config) => {
     try {
       const [contractName, contractAddress] = contractNameAddressPair.split('@')
 
-      const artifact = getArtifact(contractName, options.contractsBuildDir, logger)
+      const artifact = getArtifact(contractName, options.contractsBuildDir)
 
       if (contractAddress) {
         logger.debug(`Custom address ${contractAddress} specified`)
@@ -56,8 +54,7 @@ module.exports = async (config) => {
 
   enforce(
     failedContracts.length === 0,
-    `Failed to verify ${failedContracts.length} contract(s): ${failedContracts.join(', ')}`,
-    logger
+    `Failed to verify ${failedContracts.length} contract(s): ${failedContracts.join(', ')}`
   )
 
   logger.info(`Successfully verified ${contractNameAddressPairs.length} contract(s).`)
@@ -67,15 +64,15 @@ const parseConfig = (config) => {
   // Truffle handles network stuff, just need to get network_id
   const networkId = config.network_id
   const apiUrl = API_URLS[networkId]
-  enforce(apiUrl, `Etherscan has no support for network ${config.network} with id ${networkId}`, logger)
+  enforce(apiUrl, `Etherscan has no support for network ${config.network} with id ${networkId}`)
 
   const etherscanApiKey = config.api_keys && config.api_keys.etherscan
   const bscscanApiKey = config.api_keys && config.api_keys.bscscan
 
   const apiKey = apiUrl.includes('bscscan') && bscscanApiKey ? bscscanApiKey : etherscanApiKey
-  enforce(apiKey, 'No Etherscan API key specified', logger)
+  enforce(apiKey, 'No Etherscan API key specified')
 
-  enforce(config._.length > 1, 'No contract name(s) specified', logger)
+  enforce(config._.length > 1, 'No contract name(s) specified')
 
   const workingDir = config.working_directory
   const contractsBuildDir = config.contracts_build_directory
@@ -109,7 +106,7 @@ const verifyContract = async (artifact, options) => {
 const sendVerifyRequest = async (artifact, options) => {
   const compilerVersion = extractCompilerVersion(artifact)
   const encodedConstructorArgs = await fetchConstructorValues(artifact, options)
-  const inputJSON = getInputJSON(artifact, options.networkId, options.contractsBuildDir, logger)
+  const inputJSON = getInputJSON(artifact, options.networkId, options.contractsBuildDir)
 
   const postQueries = {
     apikey: options.apiKey,

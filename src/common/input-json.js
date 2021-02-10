@@ -2,10 +2,10 @@ const path = require('path')
 const fs = require('fs')
 const { getArtifact } = require('./util')
 
-const getInputJSON = (artifact, networkId, contractsBuildDir, logger) => {
+const getInputJSON = (artifact, networkId, contractsBuildDir) => {
   const metadata = JSON.parse(artifact.metadata)
 
-  const libraries = getLibraries(artifact, networkId, contractsBuildDir, logger)
+  const libraries = getLibraries(artifact, networkId, contractsBuildDir)
 
   const inputJSON = {
     language: metadata.language,
@@ -29,7 +29,7 @@ const getInputJSON = (artifact, networkId, contractsBuildDir, logger) => {
   return inputJSON
 }
 
-const getLibraries = (artifact, networkId, contractsBuildDir, logger) => {
+const getLibraries = (artifact, networkId, contractsBuildDir) => {
   const libraries = {
     // Example data structure of libraries object in Standard Input JSON
     // 'ConvertLib.sol': {
@@ -42,7 +42,7 @@ const getLibraries = (artifact, networkId, contractsBuildDir, logger) => {
 
   for (const libraryName in links) {
     // Retrieve the source path for this library
-    const libraryArtifact = getArtifact(libraryName, contractsBuildDir, logger)
+    const libraryArtifact = getArtifact(libraryName, contractsBuildDir)
     const librarySourceFile = libraryArtifact.ast.absolutePath
 
     // Add the library to the object of libraries for this source path
