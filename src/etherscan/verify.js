@@ -1,12 +1,11 @@
 const axios = require('axios')
 const cliLogger = require('cli-logger')
 const delay = require('delay')
-const fs = require('fs')
-const path = require('path')
 const querystring = require('querystring')
 const { API_URLS, EXPLORER_URLS, RequestStatus, VerificationStatus } = require('./constants')
-const { enforce, enforceOrThrow, normaliseContractPath } = require('./util')
-const { version } = require('./package.json')
+const { version } = require('../../package.json')
+const { getArtifact, extractCompilerVersion, enforce, enforceOrThrow } = require('../common/util')
+const { getInputJSON } = require('../common/input-json')
 
 const logger = cliLogger({ level: 'info' })
 
@@ -28,7 +27,7 @@ module.exports = async (config) => {
     try {
       const [contractName, contractAddress] = contractNameAddressPair.split('@')
 
-      const artifact = getArtifact(contractName, options)
+      const artifact = getArtifact(contractName, options.contractsBuildDir, logger)
 
       if (contractAddress) {
         logger.debug(`Custom address ${contractAddress} specified`)
@@ -90,16 +89,6 @@ const parseConfig = (config) => {
   }
 }
 
-const getArtifact = (contractName, options) => {
-  const artifactPath = path.resolve(options.contractsBuildDir, `${contractName}.json`)
-
-  logger.debug(`Reading artifact file at ${artifactPath}`)
-  enforceOrThrow(fs.existsSync(artifactPath), `Could not find ${contractName} artifact at ${artifactPath}`)
-
-  // Stringify + parse to make a deep copy (to avoid bugs with PR #19)
-  return JSON.parse(JSON.stringify(require(artifactPath)))
-}
-
 const verifyContract = async (artifact, options) => {
   enforceOrThrow(
     artifact.networks && artifact.networks[`${options.networkId}`],
@@ -120,7 +109,7 @@ const verifyContract = async (artifact, options) => {
 const sendVerifyRequest = async (artifact, options) => {
   const compilerVersion = extractCompilerVersion(artifact)
   const encodedConstructorArgs = await fetchConstructorValues(artifact, options)
-  const inputJSON = getInputJSON(artifact, options)
+  const inputJSON = getInputJSON(artifact, options.networkId, options.contractsBuildDir, logger)
 
   const postQueries = {
     apikey: options.apiKey,
@@ -142,14 +131,6 @@ const sendVerifyRequest = async (artifact, options) => {
     logger.debug(error.message)
     throw new Error(`Failed to connect to Etherscan API at url ${options.apiUrl}`)
   }
-}
-
-const extractCompilerVersion = (artifact) => {
-  const metadata = JSON.parse(artifact.metadata)
-
-  const compilerVersion = `v${metadata.compiler.version}`
-
-  return compilerVersion
 }
 
 const fetchConstructorValues = async (artifact, options) => {
@@ -185,58 +166,6 @@ const fetchConstructorValues = async (artifact, options) => {
     logger.debug('Could not retrieve constructor parameters, using empty parameters as fallback')
     return ''
   }
-}
-
-const getInputJSON = (artifact, options) => {
-  const metadata = JSON.parse(artifact.metadata)
-
-  const libraries = getLibraries(artifact, options)
-
-  const inputJSON = {
-    language: metadata.language,
-    sources: metadata.sources,
-    settings: {
-      remappings: metadata.settings.remappings,
-      optimizer: metadata.settings.optimizer,
-      evmVersion: metadata.settings.evmVersion,
-      libraries
-    }
-  }
-
-  for (const contractPath in inputJSON.sources) {
-    // If we're on Windows we need to de-Unixify the path so that Windows can read the file
-    const normalisedContractPath = normaliseContractPath(contractPath, logger)
-    const absolutePath = require.resolve(normalisedContractPath)
-    const content = fs.readFileSync(absolutePath, 'utf8')
-    inputJSON.sources[contractPath] = { content }
-  }
-
-  return inputJSON
-}
-
-const getLibraries = (artifact, options) => {
-  const libraries = {
-    // Example data structure of libraries object in Standard Input JSON
-    // 'ConvertLib.sol': {
-    //   'ConvertLib': '0x...',
-    //   'OtherLibInSameSourceFile': '0x...'
-    // }
-  }
-
-  const links = artifact.networks[`${options.networkId}`].links || {}
-
-  for (const libraryName in links) {
-    // Retrieve the source path for this library
-    const libraryArtifact = getArtifact(libraryName, options)
-    const librarySourceFile = libraryArtifact.ast.absolutePath
-
-    // Add the library to the object of libraries for this source path
-    const librariesForSourceFile = libraries[librarySourceFile] || {}
-    librariesForSourceFile[libraryName] = links[libraryName]
-    libraries[librarySourceFile] = librariesForSourceFile
-  }
-
-  return libraries
 }
 
 const verificationStatus = async (guid, options) => {

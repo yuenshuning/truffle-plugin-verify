@@ -2743,8 +2743,8 @@ tough-cookie@~2.5.0:
     psl "^1.1.28"
     punycode "^2.1.1"
 
-truffle-plugin-verify@../..:
-  version "0.4.0"
+"truffle-plugin-verify@file:../..":
+  version "0.5.4"
   dependencies:
     axios "0.19.2"
     cli-logger "0.5.40"
