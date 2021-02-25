@@ -1,63 +1,39 @@
-const axios = require('axios')
+const axios = require('axios').default
 const delay = require('delay')
 const querystring = require('querystring')
 const { API_URLS, EXPLORER_URLS, RequestStatus, VerificationStatus } = require('./constants')
-const { version } = require('../../package.json')
-const { getArtifact, extractCompilerVersion, enforce, enforceOrThrow } = require('../common/util')
+const { extractCompilerVersion, enforce, enforceOrThrow } = require('../common/util')
 const { getInputJSON } = require('../common/input-json')
 const logger = require('../common/logger')
 
-module.exports = async (config) => {
+module.exports = async (artifact, config) => {
   const options = parseConfig(config)
 
-  // Set debug logging
-  if (config.debug) logger.level('debug')
-  logger.debug('DEBUG logging is turned ON')
-  logger.debug(`Running truffle-plugin-verify v${version}`)
-
-  // Verify each contract
-  const contractNameAddressPairs = config._.slice(1)
-
-  // Track which contracts failed verification
-  const failedContracts = []
-  for (const contractNameAddressPair of contractNameAddressPairs) {
-    logger.info(`Verifying ${contractNameAddressPair}`)
-    try {
-      const [contractName, contractAddress] = contractNameAddressPair.split('@')
-
-      const artifact = getArtifact(contractName, options.contractsBuildDir)
-
-      if (contractAddress) {
-        logger.debug(`Custom address ${contractAddress} specified`)
-        if (!artifact.networks[`${options.networkId}`]) {
-          artifact.networks[`${options.networkId}`] = {}
-        }
-        artifact.networks[`${options.networkId}`].address = contractAddress
-      }
-
-      let status = await verifyContract(artifact, options)
-
-      if (status === VerificationStatus.FAILED) {
-        failedContracts.push(`${contractNameAddressPair}`)
-      } else {
-        // Add link to verified contract on Etherscan
-        const explorerUrl = `${EXPLORER_URLS[options.networkId]}/${artifact.networks[`${options.networkId}`].address}#contracts`
-        status += `: ${explorerUrl}`
-      }
-      logger.info(status)
-    } catch (error) {
-      logger.error(error.message)
-      failedContracts.push(contractNameAddressPair)
-    }
-    logger.info()
-  }
-
-  enforce(
-    failedContracts.length === 0,
-    `Failed to verify ${failedContracts.length} contract(s): ${failedContracts.join(', ')}`
+  enforceOrThrow(
+    artifact.networks && artifact.networks[`${options.networkId}`],
+    `No instance of contract ${artifact.contractName} found for network id ${options.networkId}`
   )
 
-  logger.info(`Successfully verified ${contractNameAddressPairs.length} contract(s).`)
+  const res = await sendVerifyRequest(artifact, options)
+  enforceOrThrow(res.data, `Failed to connect to Etherscan API at url ${options.apiUrl}`)
+
+  const explorerUrl = `${EXPLORER_URLS[options.networkId]}/${artifact.networks[`${options.networkId}`].address}#contracts`
+
+  if (res.data.result === VerificationStatus.ALREADY_VERIFIED) {
+    const status = VerificationStatus.ALREADY_VERIFIED
+    return { status, explorerUrl }
+  }
+
+  enforceOrThrow(res.data.status === RequestStatus.OK, res.data.result)
+
+  const status = await verificationStatus(res.data.result, options)
+
+  if (status === VerificationStatus.FAILED) {
+    const error = VerificationStatus.FAILED
+    return { status, error }
+  }
+
+  return { status, explorerUrl }
 }
 
 const parseConfig = (config) => {
@@ -70,37 +46,11 @@ const parseConfig = (config) => {
   const bscscanApiKey = config.api_keys && config.api_keys.bscscan
 
   const apiKey = apiUrl.includes('bscscan') && bscscanApiKey ? bscscanApiKey : etherscanApiKey
-  enforce(apiKey, 'No Etherscan API key specified')
+  enforce(apiKey, 'No API key specified')
 
-  enforce(config._.length > 1, 'No contract name(s) specified')
-
-  const workingDir = config.working_directory
   const contractsBuildDir = config.contracts_build_directory
 
-  return {
-    apiUrl,
-    apiKey,
-    networkId,
-    workingDir,
-    contractsBuildDir
-  }
-}
-
-const verifyContract = async (artifact, options) => {
-  enforceOrThrow(
-    artifact.networks && artifact.networks[`${options.networkId}`],
-    `No instance of contract ${artifact.contractName} found for network id ${options.networkId}`
-  )
-
-  const res = await sendVerifyRequest(artifact, options)
-  enforceOrThrow(res.data, `Failed to connect to Etherscan API at url ${options.apiUrl}`)
-
-  if (res.data.result === VerificationStatus.ALREADY_VERIFIED) {
-    return VerificationStatus.ALREADY_VERIFIED
-  }
-
-  enforceOrThrow(res.data.status === RequestStatus.OK, res.data.result)
-  return verificationStatus(res.data.result, options)
+  return { apiUrl, apiKey, networkId, contractsBuildDir }
 }
 
 const sendVerifyRequest = async (artifact, options) => {
