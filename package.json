@@ -1,8 +1,8 @@
 {
-  "name": "truffle-plugin-verify",
-  "version": "0.5.26",
+  "name": "truffle-plugin-verify-proxy",
+  "version": "0.0.1",
   "description": "Verify your deployed smart contracts on Etherscan from the Truffle CLI",
-  "repository": "https://github.com/rkalis/truffle-plugin-verify",
+  "repository": "https://github.com/yuenshuning/truffle-plugin-verify",
   "main": "verify.js",
   "files": [
     "constants.js",
@@ -21,7 +21,7 @@
     "etherscan",
     "verify"
   ],
-  "author": "Rosco Kalis <roscokalis@gmail.com>",
+  "author": "",
   "license": "MIT",
   "dependencies": {
     "axios": "^0.26.1",

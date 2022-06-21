@@ -330,7 +330,8 @@ const verifyProxyContract = async (artifact, implementationAddress, options) => 
   const artifactCopy = deepCopy(artifact)
   artifactCopy.networks[`${options.networkId}`].address = implementationAddress
 
-  const status = await verifyContract(artifactCopy, options)
+  const status = await verifyContract(artifact, options)
+  // const status = await verifyContract(artifactCopy, options)
   if ([VerificationStatus.SUCCESS, VerificationStatus.ALREADY_VERIFIED, VerificationStatus.AUTOMATICALLY_VERIFIED].includes(status)) {
     await verifyProxy(artifact.networks[`${options.networkId}`].address, options)
   }
