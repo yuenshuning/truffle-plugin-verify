@@ -1,26 +1,25 @@
-# truffle-plugin-verify
-[![NPM Version](https://img.shields.io/npm/v/truffle-plugin-verify.svg)](https://www.npmjs.com/package/truffle-plugin-verify)
-[![NPM Monthly Downloads](https://img.shields.io/npm/dm/truffle-plugin-verify.svg)](https://www.npmjs.com/package/truffle-plugin-verify)
-[![NPM License](https://img.shields.io/npm/l/truffle-assertions.svg)](https://www.npmjs.com/package/truffle-plugin-verify)
+# truffle-plugin-verify-proxy
+[![NPM Version](https://img.shields.io/npm/v/truffle-plugin-verify-proxy.svg)](https://www.npmjs.com/package/truffle-plugin-verify-proxy)
+[![NPM Monthly Downloads](https://img.shields.io/npm/dm/truffle-plugin-verify-proxy.svg)](https://www.npmjs.com/package/truffle-plugin-verify-proxy)
 
 This truffle plugin allows you to automatically verify your smart contracts' source code on Etherscan, straight from the Truffle CLI.
 
-I wrote a tutorial on my website that goes through the entire process of installing and using this plugin: [Automatically verify Truffle smart contracts on Etherscan](https://kalis.me/verify-truffle-smart-contracts-etherscan/).
+The tutorial that goes through the entire process of installing and using this plugin is detailed here: [Automatically verify Truffle smart contracts on Etherscan](https://kalis.me/verify-truffle-smart-contracts-etherscan/).
 
 **Note:** This version of the plugin uses **multi-file verification**. If you want to use source code flattening instead for any reason, please use the [legacy version (v0.4.x)](https://github.com/rkalis/truffle-plugin-verify/tree/legacy) of the plugin.
 
 ## Installation / preparation
 1. Install the plugin with npm or yarn
    ```sh
-   npm install -D truffle-plugin-verify
-   yarn add -D truffle-plugin-verify
+   npm install -D truffle-plugin-verify-proxy
+   yarn add -D truffle-plugin-verify-proxy
    ```
 2. Add the plugin to your `truffle-config.js` file
    ```js
    module.exports = {
      /* ... rest of truffle-config */
 
-     plugins: ['truffle-plugin-verify']
+     plugins: ['truffle-plugin-verify-proxy']
    }
    ```
 
@@ -59,7 +58,7 @@ This can take some time, and will eventually either return `Pass - Verified` or 
 If you do receive a `Fail - Unable to verify` and you are sure that you followed the instructions correctly, please [open an issue](/issues/new) and I will look into it. Optionally, a `--debug` flag can also be passed into the CLI to output additional debug messages. It is helpful if you run this once before opening an issue and provide the output in your bug report.
 
 ### Usage with the Truffle Dashboard
-In 2022, Truffle launched an awesome new feature called the Truffle Dashboard that allows you to deploy your contracts using your Metamask wallet. truffle-plugin-verify works with the Truffle Dashboard out of the box, but for it to work correctly you need to make sure that you are running the truffle dashboard, **connected to the same network** as you used for deployment *while* you're running `truffle run verify ...`
+In 2022, Truffle launched an awesome new feature called the Truffle Dashboard that allows you to deploy your contracts using your Metamask wallet. truffle-plugin-verify-proxy works with the Truffle Dashboard out of the box, but for it to work correctly you need to make sure that you are running the truffle dashboard, **connected to the same network** as you used for deployment *while* you're running `truffle run verify ...`
 
 ### Proxy Contracts
 This plugin supports [EIP1967](https://eips.ethereum.org/EIPS/eip-1967) proxies out of the box. If you try to verify a proxy contract (e.g. contracts deployed with OpenZeppelin's `deployProxy`), it will correctly verify the proxy contract and call Etherscan's "proxy verification" so that the proxy contract gets marked as a proxy on Etherscan (enabling Read/Write as Proxy). Note that EIP1967 *Beacon* contracts are not yet supported, and other types of non-standard proxies are also not supported.
@@ -87,7 +86,7 @@ In some cases the Etherscan website may not be directly accessible. In this case
    ```
 
 ### Constructor arguments override (Optional)
-You can additionally provide an explicit constructor arguments for the contract using the `--forceConstructorArgs` option. This is useful if the contract was created by another contract rather an EOA, because truffle-plugin-verify cannot automatically retrieve constructor arguments in these cases. Note that the value needs to be prefixed with `string:` (e.g. `--forceConstructorArgs string:0000`).
+You can additionally provide an explicit constructor arguments for the contract using the `--forceConstructorArgs` option. This is useful if the contract was created by another contract rather an EOA, because truffle-plugin-verify-proxy cannot automatically retrieve constructor arguments in these cases. Note that the value needs to be prefixed with `string:` (e.g. `--forceConstructorArgs string:0000`).
 
 ```
 truffle run verify MetaCoin --forceConstructorArgs string:0000000000000000000000000cb966d6a7702a4eff64009502653e302b3ec365 --network goerli
@@ -160,7 +159,7 @@ module.exports = {
 ```
 
 ## Notes
-This plugin has a naming conflict with the truffle-security plugin, so when using both truffle-security and truffle-plugin-verify in the same project, `truffle run etherscan` can be used instead of `truffle run verify` for truffle-plugin-verify.
+This plugin has a naming conflict with the truffle-security plugin, so when using both truffle-security and truffle-plugin-verify-proxy in the same project, `truffle run etherscan` can be used instead of `truffle run verify` for truffle-plugin-verify-proxy.
 
 ## Donations
 If you've used this plugin and found it helpful in your workflow, please consider sending some Ξ or tokens to `0xe126b3E5d052f1F575828f61fEBA4f4f2603652a` or `kalis.eth`.

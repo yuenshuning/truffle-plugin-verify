@@ -1,6 +1,6 @@
 {
   "name": "truffle-plugin-verify-proxy",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Verify your deployed smart contracts on Etherscan from the Truffle CLI",
   "repository": "https://github.com/yuenshuning/truffle-plugin-verify",
   "main": "verify.js",
